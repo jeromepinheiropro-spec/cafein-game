@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="description" content="Le Barista — le jeu d'arcade secret de Cafein. Attrapez les grains, évitez les décas, battez le record du Grand-Duché." />
+<title>Le Barista — le jeu secret de Cafein ☕</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cellipse cx='24' cy='24' rx='15' ry='21' transform='rotate(28 24 24)' fill='%231FCE8A'/%3E%3Cpath d='M15 10 C 26 18, 22 30, 33 38' stroke='%230A0F0D' stroke-width='3.4' stroke-linecap='round' fill='none'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --espresso: #0A0F0D;
+    --espresso2: #101614;
+    --cream: #F5EFE2;
+    --mint: #1FCE8A;
+    --caramel: #F4A259;
+    --sun: #FFD166;
+    --ink: #141A17;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    background: var(--espresso);
+    font-family: "Poppins", sans-serif;
+    color: var(--cream);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  /* grain */
+  body::after {
+    content: ""; position: fixed; inset: -100%; z-index: 50; pointer-events: none; opacity: .05;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 250 250' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  #game { display: block; width: 100vw; height: 100vh; }
+  .screen {
+    position: fixed; inset: 0; z-index: 100;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 24px; gap: 14px;
+    background: radial-gradient(circle at 50% 30%, rgba(31,206,138,.08), transparent 60%), var(--espresso);
+    transition: opacity .4s ease, visibility .4s;
+  }
+  .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .tag {
+    font-family: "Poppins"; font-weight: 600; font-size: 11px; letter-spacing: .35em;
+    text-transform: uppercase; color: var(--mint);
+    border: 1px solid rgba(31,206,138,.35); padding: 8px 18px; border-radius: 999px;
+  }
+  h1 {
+    font-weight: 800; font-size: clamp(3rem, 10vw, 6.5rem); line-height: .95;
+    text-transform: uppercase; letter-spacing: -.02em;
+  }
+  h1 .mint { color: var(--mint); }
+  .sub { font-weight: 400; font-size: clamp(.95rem, 2.5vw, 1.15rem); color: rgba(245,239,226,.65); max-width: 560px; }
+  .rules { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+  .rule {
+    display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;
+    border: 1px solid rgba(245,239,226,.15); border-radius: 999px; padding: 8px 16px;
+  }
+  .dot { width: 16px; height: 20px; border-radius: 50% 50% 50% 50%/60% 60% 40% 40%; display: inline-block; transform: rotate(20deg); }
+  .btn {
+    margin-top: 14px; cursor: pointer; border: none; border-radius: 999px;
+    background: var(--mint); color: var(--ink);
+    font-family: "Poppins"; font-weight: 700; font-size: 18px; padding: 16px 42px;
+    box-shadow: 5px 5px 0 rgba(245,239,226,.18);
+    transition: transform .15s, box-shadow .15s;
+  }
+  .btn:hover { transform: translate(4px,4px); box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .btn.ghost { background: transparent; color: var(--cream); border: 2px solid rgba(245,239,226,.3); box-shadow: none; }
+  .record-line { font-size: 14px; color: rgba(245,239,226,.55); font-weight: 600; letter-spacing: .05em; }
+  .record-line b { color: var(--sun); }
+  .reward {
+    background: var(--mint); color: var(--ink); border-radius: 24px; padding: 26px 30px;
+    max-width: 520px; box-shadow: 8px 8px 0 rgba(245,239,226,.15); margin-top: 8px;
+    animation: pop .5s cubic-bezier(.2,1.6,.4,1);
+  }
+  .reward h2 { font-weight: 800; font-size: 26px; text-transform: uppercase; }
+  .reward p { font-weight: 500; font-size: 15px; margin-top: 8px; }
+  .reward .code {
+    display: inline-block; margin-top: 12px; background: var(--ink); color: var(--mint);
+    font-weight: 700; letter-spacing: .25em; padding: 10px 22px; border-radius: 12px; font-size: 18px;
+  }
+  @keyframes pop { from { transform: scale(.6) rotate(-4deg); opacity: 0; } }
+  .hud {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 90;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 22px; pointer-events: none;
+    font-weight: 700;
+  }
+  .hud .score { font-size: clamp(1.6rem, 5vw, 2.6rem); color: var(--cream); }
+  .hud .combo { font-size: 14px; color: var(--sun); font-weight: 700; letter-spacing: .1em; min-height: 18px;}
+  .hud .best { font-size: 12px; color: rgba(245,239,226,.5); letter-spacing: .15em; text-transform: uppercase; }
+  #timerbar { position: fixed; top: 0; left: 0; height: 4px; background: var(--mint); width: 100%; z-index: 95; transition: width .2s linear; }
+  .screen.hidden .reward { animation: none; }
+  footer.credit {
+    position: fixed; bottom: 14px; left: 0; right: 0; z-index: 90; text-align: center;
+    font-size: 10px; letter-spacing: .3em; text-transform: uppercase; color: rgba(245,239,226,.35);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="game"></canvas>
+<div id="timerbar" style="display:none"></div>
+
+<div class="hud" id="hud" style="display:none">
+  <div>
+    <div class="score" id="score">0</div>
+    <div class="combo" id="combo"></div>
+  </div>
+  <div class="best" id="hudbest"></div>
+</div>
+
+<!-- Écran d'intro -->
+<div class="screen" id="intro">
+  <div class="tag">Le jeu secret de Cafein</div>
+  <h1>Le <span class="mint">Barista</span></h1>
+  <p class="sub">Attrapez un maximum de grains en 45 secondes. Les grains dorés valent triple. Évitez les décas gris — un barista digne de ce nom ne sert jamais de déca.</p>
+  <div class="rules">
+    <span class="rule"><span class="dot" style="background:var(--mint)"></span> +10</span>
+    <span class="rule"><span class="dot" style="background:var(--sun)"></span> +30</span>
+    <span class="rule"><span class="dot" style="background:#777"></span> −20</span>
+    <span class="rule">🖱️ souris / doigt / flèches</span>
+  </div>
+  <p class="record-line">Record du Grand-Duché à battre : <b id="recordDisplay"></b> — votre meilleur : <b id="bestDisplay">0</b></p>
+  <button class="btn" id="startBtn">Servir le premier café</button>
+  <p class="record-line" style="font-size:12px">Battez le record → <b>10% sur votre offre</b> ou un café offert ☕</p>
+</div>
+
+<!-- Écran de fin -->
+<div class="screen hidden" id="end">
+  <div class="tag" id="endTag">Service terminé</div>
+  <h1 id="endScore">0</h1>
+  <p class="sub" id="endSub"></p>
+  <div class="reward" id="rewardBox" style="display:none">
+    <h2>🏆 Record battu !</h2>
+    <p>Vous remportez <b>10% sur votre offre de prix</b> — ou un café offert, au choix. Faites une capture d'écran et envoyez-la-nous avec ce code :</p>
+    <span class="code">GRAIN-DOR</span>
+  </div>
+  <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center">
+    <button class="btn" id="retryBtn">Rejouer</button>
+    <button class="btn ghost" id="contactBtn">Réclamer / Nous écrire</button>
+  </div>
+</div>
+
+<footer class="credit">Cafein — Luxembourg · tapez le Konami code sur cafein pour revenir ici</footer>
+
+<script>
+(() => {
+  const RECORD = 500;                    // le record officiel à battre
+  const DURATION = 45;                   // secondes
+  const SITE_CONTACT = "https://cafein-v4-production.up.railway.app/#contact";
+
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  let W, H, dpr;
+
+  function resize() {
+    dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  /* ── état ── */
+  const cup = { x: 0.5, w: 110, h: 74, vx: 0 };
+  let beans = [], parts = [], pops = [];
+  let score = 0, combo = 0, best = +(localStorage.getItem("barista-best") || 0);
+  let timeLeft = DURATION, playing = false, last = 0, spawnT = 0, shake = 0;
+
+  const $ = (id) => document.getElementById(id);
+  $("recordDisplay").textContent = RECORD + " pts";
+  $("bestDisplay").textContent = best + " pts";
+
+  /* ── entrées ── */
+  let targetX = 0.5;
+  const keys = {};
+  window.addEventListener("mousemove", (e) => { targetX = e.clientX / W; });
+  window.addEventListener("touchmove", (e) => { targetX = e.touches[0].clientX / W; }, { passive: true });
+  window.addEventListener("touchstart", (e) => { targetX = e.touches[0].clientX / W; }, { passive: true });
+  window.addEventListener("keydown", (e) => { keys[e.key] = true; if (e.key === " " && !playing && !$("intro").classList.contains("hidden")) start(); });
+  window.addEventListener("keyup", (e) => { keys[e.key] = false; });
+
+  /* ── dessin ── */
+  function drawBean(x, y, r, color, rot) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, r * 0.72, r, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#0A0F0D";
+    ctx.lineWidth = Math.max(2, r * 0.16);
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.45, -r * 0.62);
+    ctx.bezierCurveTo(r * 0.35, -r * 0.25, -r * 0.35, r * 0.25, r * 0.45, r * 0.62);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCup(cx, cy) {
+    const w = cup.w, h = cup.h;
+    ctx.save();
+    ctx.translate(cx, cy);
+    const tilt = cup.vx * 2.2;
+    ctx.rotate(tilt);
+    /* corps */
+    ctx.strokeStyle = "#F5EFE2";
+    ctx.lineWidth = 7;
+    ctx.lineJoin = "round";
+    ctx.beginPath();
+    ctx.moveTo(-w / 2, -h / 2);
+    ctx.lineTo(w / 2, -h / 2);
+    ctx.lineTo(w / 2, 0);
+    ctx.arc(0, 0, w / 2, 0, Math.PI);
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(31,206,138,.16)";
+    ctx.fill();
+    /* café dedans (niveau selon combo) */
+    const lvl = Math.min(1, combo / 10);
+    ctx.fillStyle = "#1FCE8A";
+    ctx.beginPath();
+    ctx.rect(-w / 2 + 6, -h / 2 + (1 - lvl) * 26 + 6, w - 12, 20);
+    ctx.fill();
+    /* anse */
+    ctx.beginPath();
+    ctx.strokeStyle = "#F5EFE2";
+    ctx.arc(w / 2 + 14, -h / 6, 16, -Math.PI / 2, Math.PI / 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ── boucle ── */
+  function spawn() {
+    const r = 16 + Math.random() * 10;
+    const roll = Math.random();
+    let type = "mint";
+    if (roll > 0.85) type = "sun";
+    else if (roll > 0.68) type = "decaf";
+    beans.push({
+      x: 0.06 + Math.random() * 0.88,
+      y: -40,
+      r,
+      type,
+      vy: (type === "sun" ? 260 : 170) + Math.random() * 110 + (DURATION - timeLeft) * 3.5,
+      rot: Math.random() * Math.PI,
+      vr: (Math.random() - 0.5) * 3,
+    });
+  }
+
+  function addPop(x, y, txt, color) {
+    pops.push({ x, y, txt, color, life: 1 });
+  }
+  function burst(x, y, color, n = 12) {
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, s = 60 + Math.random() * 240;
+      parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 80, life: 0.7 + Math.random() * 0.4, color });
+    }
+  }
+
+  function step(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    if (playing) {
+      timeLeft -= dt;
+      $("timerbar").style.width = Math.max(0, (timeLeft / DURATION) * 100) + "%";
+      if (timeLeft <= 0) return end();
+
+      /* déplacement tasse */
+      if (keys.ArrowLeft) targetX -= dt * 0.9;
+      if (keys.ArrowRight) targetX += dt * 0.9;
+      targetX = Math.max(0.04, Math.min(0.96, targetX));
+      const prev = cup.x;
+      cup.x += (targetX - cup.x) * Math.min(1, dt * 14);
+      cup.vx = (cup.x - prev) / Math.max(dt, 0.001) * 0.1;
+
+      /* spawn */
+      spawnT -= dt;
+      if (spawnT <= 0) {
+        spawn();
+        const progress = 1 - timeLeft / DURATION;
+        spawnT = Math.max(0.16, 0.55 - progress * 0.35);
+      }
+
+      const cx = cup.x * W, cy = H - 90;
+
+      /* grains */
+      for (const b of beans) {
+        b.y += b.vy * dt;
+        b.rot += b.vr * dt;
+        const bx = b.x * W;
+        if (!b.dead && Math.abs(bx - cx) < cup.w / 2 + b.r * 0.4 && Math.abs(b.y - (cy - cup.h / 4)) < cup.h / 2 + b.r * 0.4 && b.vy > 0) {
+          b.dead = true;
+          if (b.type === "decaf") {
+            score = Math.max(0, score - 20);
+            combo = 0;
+            shake = 12;
+            addPop(bx, b.y, "-20 DÉCA !", "#999");
+            burst(bx, b.y, "#777", 10);
+          } else {
+            const base = b.type === "sun" ? 30 : 10;
+            combo++;
+            const bonus = combo >= 4 ? 5 * Math.min(combo - 3, 6) : 0;
+            score += base + bonus;
+            addPop(bx, b.y, "+" + (base + bonus), b.type === "sun" ? "#FFD166" : "#1FCE8A");
+            burst(bx, b.y, b.type === "sun" ? "#FFD166" : "#1FCE8A");
+          }
+          $("score").textContent = score;
+          $("combo").textContent = combo >= 4 ? "COMBO ×" + combo : "";
+        }
+        if (b.y > H + 60 && !b.dead) {
+          b.dead = true;
+          if (b.type !== "decaf") { combo = 0; $("combo").textContent = ""; }
+        }
+      }
+      beans = beans.filter((b) => !b.dead);
+    }
+
+    /* particules */
+    for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 500 * dt; p.life -= dt; }
+    parts = parts.filter((p) => p.life > 0);
+    for (const p of pops) { p.y -= 50 * dt; p.life -= dt * 1.2; }
+    pops = pops.filter((p) => p.life > 0);
+    if (shake > 0) shake = Math.max(0, shake - dt * 40);
+
+    /* rendu */
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+
+    /* halo de fond */
+    const g = ctx.createRadialGradient(W / 2, H * 0.25, 0, W / 2, H * 0.25, H * 0.8);
+    g.addColorStop(0, "rgba(31,206,138,0.06)");
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    for (const b of beans) {
+      drawBean(b.x * W, b.y, b.r, b.type === "sun" ? "#FFD166" : b.type === "decaf" ? "#8a8a8a" : "#1FCE8A", b.rot);
+    }
+    if (playing) drawCup(cup.x * W, H - 90);
+
+    for (const p of parts) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+      ctx.globalAlpha = 1;
+    }
+    for (const p of pops) {
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.color;
+      ctx.font = "800 22px Poppins, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText(p.txt, p.x, p.y);
+      ctx.globalAlpha = 1;
+    }
+    ctx.restore();
+    requestAnimationFrame(step);
+  }
+
+  /* ── cycle ── */
+  function start() {
+    beans = []; parts = []; pops = [];
+    score = 0; combo = 0; timeLeft = DURATION; spawnT = 0;
+    $("score").textContent = "0";
+    $("combo").textContent = "";
+    $("hudbest").textContent = "record " + RECORD + " · best " + best;
+    $("intro").classList.add("hidden");
+    $("end").classList.add("hidden");
+    $("hud").style.display = "flex";
+    $("timerbar").style.display = "block";
+    playing = true;
+  }
+
+  function end() {
+    playing = false;
+    $("hud").style.display = "none";
+    $("timerbar").style.display = "none";
+    if (score > best) { best = score; localStorage.setItem("barista-best", best); }
+    $("endScore").textContent = score + " pts";
+    const beat = score > RECORD;
+    $("endTag").textContent = beat ? "Champion du Grand-Duché" : "Service terminé";
+    $("rewardBox").style.display = beat ? "block" : "none";
+    $("endSub").textContent = beat
+      ? "Incroyable. Le record de " + RECORD + " pts est tombé."
+      : "Record à battre : " + RECORD + " pts — votre meilleur : " + best + " pts. Encore un petit espresso ?";
+    $("end").classList.remove("hidden");
+  }
+
+  $("startBtn").addEventListener("click", start);
+  $("retryBtn").addEventListener("click", start);
+  $("contactBtn").addEventListener("click", () => { window.location.href = SITE_CONTACT; });
+
+  requestAnimationFrame((t) => { last = t; requestAnimationFrame(step); });
+})();
+</script>
+</body>
+</html>
