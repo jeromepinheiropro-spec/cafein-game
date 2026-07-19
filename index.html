@@ -393,14 +393,26 @@
     playing = false;
     $("hud").style.display = "none";
     $("timerbar").style.display = "none";
-    if (score > best) { best = score; localStorage.setItem("barista-best", best); }
+    const newBest = score > best;
+    if (newBest) { best = score; localStorage.setItem("barista-best", best); }
     $("endScore").textContent = score + " pts";
     const beat = score > RECORD;
-    $("endTag").textContent = beat ? "Champion du Grand-Duché" : "Service terminé";
-    $("rewardBox").style.display = beat ? "block" : "none";
-    $("endSub").textContent = beat
-      ? "Incroyable. Le record de " + RECORD + " pts est tombé."
-      : "Record à battre : " + RECORD + " pts — votre meilleur : " + best + " pts. Encore un petit espresso ?";
+    const claimed = localStorage.getItem("barista-reward") === "1";
+    if (beat && !claimed) {
+      /* première fois au-dessus du record officiel : la récompense */
+      localStorage.setItem("barista-reward", "1");
+      $("endTag").textContent = "Champion du Grand-Duché";
+      $("rewardBox").style.display = "block";
+      $("endSub").textContent = "Incroyable. Le record officiel de " + RECORD + " pts est tombé.";
+    } else if (beat) {
+      $("endTag").textContent = newBest ? "Nouveau record personnel !" : "Toujours au sommet";
+      $("rewardBox").style.display = "none";
+      $("endSub").textContent = "Encore au-dessus des " + RECORD + " pts — votre récompense est déjà débloquée (code GRAIN-DOR). Votre meilleur : " + best + " pts.";
+    } else {
+      $("endTag").textContent = newBest ? "Nouveau record personnel" : "Service terminé";
+      $("rewardBox").style.display = "none";
+      $("endSub").textContent = "Record à battre : " + RECORD + " pts — votre meilleur : " + best + " pts. Encore un petit espresso ?";
+    }
     $("end").classList.remove("hidden");
   }
 
