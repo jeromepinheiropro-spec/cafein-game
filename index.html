@@ -118,11 +118,12 @@
 <div class="screen" id="intro">
   <div class="tag">Le jeu secret de Cafein</div>
   <h1>Le <span class="mint">Barista</span></h1>
-  <p class="sub">Attrapez un maximum de grains en 45 secondes. Les grains dorés valent triple. Évitez les décas gris — un barista digne de ce nom ne sert jamais de déca.</p>
+  <p class="sub">Attrapez un maximum de grains en 45 secondes. Les grains dorés valent triple, les décas gris coûtent cher… et chaque grain raté vous coûte 5 points. Un vrai barista ne laisse rien tomber.</p>
   <div class="rules">
     <span class="rule"><span class="dot" style="background:var(--mint)"></span> +10</span>
     <span class="rule"><span class="dot" style="background:var(--sun)"></span> +30</span>
     <span class="rule"><span class="dot" style="background:#777"></span> −20</span>
+    <span class="rule"><span class="dot" style="background:#F4A259"></span> raté −5</span>
     <span class="rule">🖱️ souris / doigt / flèches</span>
   </div>
   <p class="record-line">Record du Grand-Duché à battre : <b id="recordDisplay"></b> — votre meilleur : <b id="bestDisplay">0</b></p>
@@ -243,9 +244,10 @@
   function spawn() {
     const r = 16 + Math.random() * 10;
     const roll = Math.random();
+    const progress = 1 - timeLeft / DURATION;
     let type = "mint";
     if (roll > 0.85) type = "sun";
-    else if (roll > 0.68) type = "decaf";
+    else if (roll > 0.68 - progress * 0.16) type = "decaf"; /* de plus en plus de décas */
     beans.push({
       x: 0.06 + Math.random() * 0.88,
       y: -40,
@@ -319,7 +321,13 @@
         }
         if (b.y > H + 60 && !b.dead) {
           b.dead = true;
-          if (b.type !== "decaf") { combo = 0; $("combo").textContent = ""; }
+          if (b.type !== "decaf") {
+            combo = 0;
+            score = Math.max(0, score - 5);
+            $("score").textContent = score;
+            $("combo").textContent = "";
+            addPop(b.x * W, H - 50, "-5 RATÉ !", "#F4A259");
+          }
         }
       }
       beans = beans.filter((b) => !b.dead);
